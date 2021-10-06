@@ -76,10 +76,10 @@ commands:
           name: "Publish Docker Images to Docker Hub"
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            docker push ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} 
-            docker push ${DOCKER_IMAGE}:${CIRCLE_SHA1}
-            docker push ${DOCKER_IMAGE}:${VERSION}
-            docker push ${DOCKER_IMAGE}:latest
+            docker push ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} 
+            docker push ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:${CIRCLE_SHA1}
+            docker push ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:${VERSION}
+            docker push ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:latest
 
   run-pytest:
     description: "Run PyTest"
