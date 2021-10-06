@@ -96,8 +96,16 @@ commands:
           name: Pip Install Testing Requirements
           command: pip install -r << parameters.requirements-path >>
       - run:
+          name: Make Directory for Test Results
+          command: mkdir test-results
+      - run:
           name: Run PyTest Test Suite
           command: pytest << parameters.pytest-args >>
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+
 
 
 executors:
@@ -118,7 +126,7 @@ jobs:
     steps:
       - run-pytest:
           requirements-path: "./demo/requirements/testing.txt"
-          pytest-args: "--live-server-port 8080 --verbose"
+          pytest-args: "--live-server-port 8080 --verbose --junitxml=test-results/junit.xml"
 
   build-image:
     executor: amd64
@@ -163,10 +171,15 @@ workflows:
           name: "Testing Docker Image"
           requires:
             - "Building Docker Image"
+      - hold:
+          name: "Approval Needed for Deployment"
+          type: approval
+          requires:
+            - "Testing Docker Image"
       - tag-and-publish:
           name: "Tag and Publish Docker Images"
           requires:
-            - "Testing Docker Image"
+            - "Approval Needed for Deployment"
           filters:
             branches:
               only: testing
