@@ -55,8 +55,6 @@ commands:
     description: "Build Docker image"
     steps:
       - checkout
-      - setup_remote_docker:
-          docker_layer_caching: true
       - run:
           name: Build Docker Image
           command: docker build -t ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} -f Dockerfile .
@@ -64,8 +62,6 @@ commands:
   tagging:
     description: "Add tags to a Docker Image"
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
       - run:
           name: Tag Image
           command: | 
@@ -76,8 +72,6 @@ commands:
   publish:
     description: "Publish Docker Image"
     steps:  
-      - setup_remote_docker:
-          docker_layer_caching: true
       - run:
           name: "Publish Docker Images to Docker Hub"
           command: |
@@ -113,6 +107,7 @@ executors:
   amd64:
     machine:
       image: ubuntu-2004:202010-01
+      docker_layer_caching: true
     resource_class: medium
 
 
@@ -172,5 +167,5 @@ workflows:
             - "Testing Docker Image"
           filters:
             branches:
-              only: main
+              only: testing
       
