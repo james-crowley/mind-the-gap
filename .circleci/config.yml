@@ -4,13 +4,23 @@ orbs:
   tailscale: crowley-namespace/tailscale@1.0.0
 
 commands:
+  set-build-env:
+    description: "Set environment variables needed for building"
+    steps:
+      - checkout
+      - run:
+          name: Setup Build Environment Variables
+          command: |
+            echo "export VERSION=$(cat VERSION)" >> $BASH_ENV
+            source $BASH_ENV
+  
   save-docker-image:
     description: "Saves a Docker image for future Jobs"
     steps:
       - run: mkdir -p /tmp/docker-images/
       - run:
           name: Saving Docker Image
-          command: docker save --output /tmp/docker-images/${DOCKER_NAMESPACE}-${DOCKER_IMAGE}-$(docker version -f {{.Server.Arch}})-${VERSION}-${CIRCLE_SHA1}.tar ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:$(docker version -f {{.Server.Arch}})-${VERSION}-${CIRCLE_SHA1}
+          command: docker save --output /tmp/docker-images/${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1}.tar ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1}
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -23,7 +33,7 @@ commands:
           at: /tmp
       - run:
             name: Loading Docker Image
-            command: docker load --input /tmp/docker-images/${DOCKER_NAMESPACE}-${DOCKER_IMAGE}-$(docker version -f {{.Server.Arch}})-${VERSION}-${CIRCLE_SHA1}.tar
+            command: docker load --input /tmp/docker-images/${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1}.tar
 
   test:
     description: "Launches tests against a Docker image"
@@ -39,7 +49,43 @@ commands:
             goss -version
       - run:
           name: Run dgoss Test
-          command: dgoss run -p 8080:8080 ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:$(docker version -f {{.Server.Arch}})-${VERSION}-${CIRCLE_SHA1}
+          command: dgoss run -p 8080:8080 ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1}
+
+  build:
+    description: "Build Docker image"
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Build Docker Image
+          command: docker build -t ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} -f Dockerfile .
+
+  tagging:
+    description: "Add tags to a Docker Image"
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Tag Image
+          command: | 
+            docker tag ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} ${DOCKER_IMAGE}:${CIRCLE_SHA1}
+            docker tag ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} ${DOCKER_IMAGE}:${VERSION}
+            docker tag ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} ${DOCKER_IMAGE}:latest
+    
+  publish:
+    description: "Publish Docker Image"
+    steps:  
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: "Publish Docker Images to Docker Hub"
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            docker push {DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} 
+            docker push ${DOCKER_IMAGE}:${CIRCLE_SHA1}
+            docker push ${DOCKER_IMAGE}:${VERSION}
+            docker push ${DOCKER_IMAGE}:latest
 
   run-pytest:
     description: "Run PyTest"
@@ -58,10 +104,16 @@ commands:
           name: Run PyTest Test Suite
           command: pytest << parameters.pytest-args >>
 
+
 executors:
   browsers-python:
     docker:
       - image: circleci/python:3.9-browsers
+
+  amd64:
+    machine:
+      image: ubuntu-2004:202010-01
+    resource_class: medium
 
 
 jobs:
@@ -72,8 +124,53 @@ jobs:
           requirements-path: "./demo/requirements/testing.txt"
           pytest-args: "--live-server-port 8080 --verbose"
 
+  build-image:
+    executor: amd64
+    steps:
+      - set-build-env
+      - build
+      - save-docker-image
+    environment:
+      DOCKER_IMAGE: mind-the-gap-demo
+
+  test-image:
+    executor: amd64
+    steps:
+      - set-build-env
+      - load-docker-image
+      - test
+    environment:
+      DOCKER_IMAGE: mind-the-gap-demo
+      GOSS_SLEEP: 10
+
+  tag-and-publish:
+    executor: amd64
+    steps:
+      - set-build-env
+      - tagging
+      - publish
+    environment:
+      DOCKER_IMAGE: mind-the-gap-demo
+
+
 workflows:
   demo:
     jobs:
       - test-demo:
           name: "Testing Python Demo Code"
+      - build-image:
+          name: "Building Docker Image"
+          requires:
+            - "Testing Python Demo Code"
+      - test-image:
+          name: "Testing Docker Image"
+          requires:
+            - "Building Docker Image"
+      - tag-and-publish:
+          name: "Tag and Publish Docker Images"
+          requires:
+            - "Testing Docker Image"
+          filters:
+            branches:
+              only: main
+      
