@@ -1,0 +1,79 @@
+version: 2.1
+
+orbs:
+  tailscale: crowley-namespace/tailscale@1.0.0
+
+commands:
+  save-docker-image:
+    description: "Saves a Docker image for future Jobs"
+    steps:
+      - run: mkdir -p /tmp/docker-images/
+      - run:
+          name: Saving Docker Image
+          command: docker save --output /tmp/docker-images/${DOCKER_NAMESPACE}-${DOCKER_IMAGE}-$(docker version -f {{.Server.Arch}})-${VERSION}-${CIRCLE_SHA1}.tar ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:$(docker version -f {{.Server.Arch}})-${VERSION}-${CIRCLE_SHA1}
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - docker-images/*
+
+  load-docker-image:
+    description: "Loads a Docker image"
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+            name: Loading Docker Image
+            command: docker load --input /tmp/docker-images/${DOCKER_NAMESPACE}-${DOCKER_IMAGE}-$(docker version -f {{.Server.Arch}})-${VERSION}-${CIRCLE_SHA1}.tar
+
+  test:
+    description: "Launches tests against a Docker image"
+    steps:
+      - checkout
+      - run:
+          name: Install goss
+          command: |
+            # rather than give internet scripts SU rights, we install to local user bin and add to path
+            export GOSS_DST=~/bin
+            export PATH=$PATH:~/bin
+            curl -fsSL https://goss.rocks/install | sh
+            goss -version
+      - run:
+          name: Run dgoss Test
+          command: dgoss run -p 8080:8080 ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:$(docker version -f {{.Server.Arch}})-${VERSION}-${CIRCLE_SHA1}
+
+  run-pytest:
+    description: "Run PyTest"
+    parameters:
+      requirements-path:
+        type: string
+      pytest-args:
+        type: string
+        default: "--verbose"
+    steps:
+      - checkout
+      - run:
+          name: Pip Install Testing Requirements
+          command: pip install -r << parameters.requirements-path >>
+      - run:
+          name: Run PyTest Test Suite
+          command: pytest << parameters.pytest-args >>
+
+executors:
+  browsers-python:
+    docker:
+      - image: circleci/python:3.9-browsers
+
+
+jobs:
+  test-demo:
+    executor: browsers-python
+    steps:
+      - run-pytest:
+          requirements-path: "./demo/requirements/testing.txt"
+          pytest-args: "--live-server-port 8080 --verbose"
+
+workflows:
+  demo:
+    jobs:
+      - test-demo:
+          name: "Testing Python Demo Code"
