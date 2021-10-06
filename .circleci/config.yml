@@ -142,6 +142,7 @@ jobs:
     executor: amd64
     steps:
       - set-build-env
+      - load-docker-image
       - tagging
       - publish
     environment:
