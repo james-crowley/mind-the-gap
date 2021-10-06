@@ -65,9 +65,10 @@ commands:
       - run:
           name: Tag Image
           command: | 
-            docker tag ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} ${DOCKER_IMAGE}:${CIRCLE_SHA1}
-            docker tag ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} ${DOCKER_IMAGE}:${VERSION}
-            docker tag ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} ${DOCKER_IMAGE}:latest
+            docker tag ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1}
+            docker tag ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:${CIRCLE_SHA1}
+            docker tag ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:${VERSION}
+            docker tag ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:latest
     
   publish:
     description: "Publish Docker Image"
