@@ -123,7 +123,7 @@ commands:
         type: string
     steps:
       - run:
-          name: "SSH into host and remove all images"
+          name: "SSH into host and Stop all Images"
           command: |
              ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker rm -f \$(docker ps -a -q)" || echo "No Running Containers"
 
@@ -136,7 +136,7 @@ commands:
         type: string
     steps:
       - run:
-          name: "SSH into host and remove all images"
+          name: "SSH into host and Remove all Images"
           command: |
              ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker rmi -f \$(docker images -q)" || echo "No Images to Remove"
               
@@ -152,7 +152,7 @@ commands:
         default: "latest"
     steps:
       - run:
-          name: "SSH into host and pull down an image"
+          name: "SSH into host and Pull down an Image"
           command: |
              ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker pull ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:<< parameters.image-tag >>"
 
@@ -178,6 +178,12 @@ executors:
       - image: circleci/python:3.9-browsers
 
   amd64:
+    machine:
+      image: ubuntu-2004:202010-01
+      docker_layer_caching: true
+    resource_class: medium
+
+  runner:
     machine:
       image: ubuntu-2004:202010-01
       docker_layer_caching: true
@@ -245,6 +251,25 @@ jobs:
     environment:
       DOCKER_IMAGE: mind-the-gap-demo
 
+  deploy-via-runner:
+    machine: true
+    resource_class: crowley-namespace/mind-the-gap
+    steps:
+      - stop-running-containers:
+          remote-ip: "172.31.36.246"
+          remote-user: "ubuntu"
+      - remove-all-images:
+          remote-ip: "172.31.36.246"
+          remote-user: "ubuntu"
+      - pull-image:
+          remote-ip: "172.31.36.246"
+          remote-user: "ubuntu"
+      - deploy-application:
+          remote-ip: "172.31.36.246"
+          remote-user: "ubuntu"
+    environment:
+      DOCKER_IMAGE: mind-the-gap-demo
+
 
 workflows:
   demo:
@@ -273,5 +298,9 @@ workflows:
               only: testing
       - deploy-via-orb:
           name: "Deploy Application via Orb"
+          requires:
+            - "Tag and Publish Docker Images"
+      - deploy-via-runner:
+          name: "Deploy Application via Runner"
           requires:
             - "Tag and Publish Docker Images"
