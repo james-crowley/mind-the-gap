@@ -122,13 +122,10 @@ commands:
       remote-user:
         type: string
     steps:
-      - add_ssh_keys:
-          fingerprints:
-            - "dd:8f:af:18:32:a1:c9:b7:86:ca:73:a1:1e:77:db:87"
       - run:
-          name: "SSH into host and pull down an image"
+          name: "SSH into host and remove all images"
           command: |
-             ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker rm -f \$(docker ps -a -q)"
+             ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker rm -f \$(docker ps -a -q)" || echo "No Running Containers"
 
   remove-all-images:
     description: "Remove all images on Remote Host"
@@ -138,13 +135,10 @@ commands:
       remote-user:
         type: string
     steps:
-      - add_ssh_keys:
-          fingerprints:
-            - "dd:8f:af:18:32:a1:c9:b7:86:ca:73:a1:1e:77:db:87"
       - run:
           name: "SSH into host and remove all images"
           command: |
-             ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker rmi -f \$(docker images -q)"
+             ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker rmi -f \$(docker images -q)" || echo "No Images to Remove"
               
   pull-image:
     description: "Pull Image on Remote Host"
@@ -157,11 +151,8 @@ commands:
         type: string
         default: "latest"
     steps:
-      - add_ssh_keys:
-          fingerprints:
-            - "dd:8f:af:18:32:a1:c9:b7:86:ca:73:a1:1e:77:db:87"
       - run:
-          name: "SSH into host and remove all images"
+          name: "SSH into host and pull down an image"
           command: |
              ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker pull ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:<< parameters.image-tag >>"
 
@@ -176,11 +167,8 @@ commands:
         type: string
         default: "latest"
     steps:
-      - add_ssh_keys:
-          fingerprints:
-            - "dd:8f:af:18:32:a1:c9:b7:86:ca:73:a1:1e:77:db:87"
       - run:
-          name: "SSH into host and remove all images"
+          name: "SSH into host and Deploy Application"
           command: |
              ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker run -d -p 80:8080 ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:<< parameters.image-tag >>"
 
@@ -236,19 +224,22 @@ jobs:
   deploy-via-orb:
     executor: amd64
     steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "dd:8f:af:18:32:a1:c9:b7:86:ca:73:a1:1e:77:db:87"
       - tailscale/install
       - tailscale/connect
       - stop-running-containers:
-          remote-ip: "100.77.96.104"
+          remote-ip: "100.75.236.14"
           remote-user: "ubuntu"
       - remove-all-images:
-          remote-ip: "100.77.96.104"
+          remote-ip: "100.75.236.14"
           remote-user: "ubuntu"
       - pull-image:
-          remote-ip: "100.77.96.104"
+          remote-ip: "100.75.236.14"
           remote-user: "ubuntu"
       - deploy-application:
-          remote-ip: "100.77.96.104"
+          remote-ip: "100.75.236.14"
           remote-user: "ubuntu"
       - tailscale/disconnect
     environment:
