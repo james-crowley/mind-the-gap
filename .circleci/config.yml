@@ -121,12 +121,15 @@ commands:
         type: string
       remote-user:
         type: string
-    steps:  
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "dd:8f:af:18:32:a1:c9:b7:86:ca:73:a1:1e:77:db:87"
       - run:
           name: "SSH into host and stop all Containers"
           command: |
-             ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> \
-             docker rm $(docker ps -a -q)
+             ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker rm -f \$(docker ps -a -q)"
+              
 
 
 executors:
