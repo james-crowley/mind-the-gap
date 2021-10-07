@@ -45,11 +45,19 @@ commands:
             # rather than give internet scripts SU rights, we install to local user bin and add to path
             export GOSS_DST=~/bin
             export PATH=$PATH:~/bin
+            export GOSS_OPTS="--format junit"
             curl -fsSL https://goss.rocks/install | sh
             goss -version
       - run:
+          name: Make Directory for Test Results
+          command: mkdir test-results
+      - run:
           name: Run dgoss Test
-          command: dgoss run -p 8080:8080 ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1}
+          command: dgoss run -p 8080:8080 ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} > test-results/report.xml
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
 
   build:
     description: "Build Docker image"
