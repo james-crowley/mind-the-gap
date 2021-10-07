@@ -114,6 +114,19 @@ commands:
       - store_artifacts:
           path: test-results
 
+  stop-running-containers:
+    description: "Stop Running Containers on Remote Host"
+    parameters:
+      remote-ip:
+        type: string
+      remote-user:
+        type: string
+    steps:  
+      - run:
+          name: "SSH into host and stop all Containers"
+          command: |
+             ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> \
+             docker rm $(docker ps -a -q)
 
 
 executors:
@@ -165,6 +178,18 @@ jobs:
     environment:
       DOCKER_IMAGE: mind-the-gap-demo
 
+  deploy-via-orb:
+    executor: amd64
+    steps:
+      - tailscale/install
+      - tailscale/connect
+      - stop-running-containers:
+          remote-ip: "100.77.96.104"
+          remote-user: "ubuntu"
+      - tailscale/disconnect
+    environment:
+      DOCKER_IMAGE: mind-the-gap-demo
+
 
 workflows:
   demo:
@@ -191,4 +216,7 @@ workflows:
           filters:
             branches:
               only: testing
-      
+      - deploy-via-orb:
+          name: "Deploy Application via Orb"
+          requires:
+            - "Tag and Publish Docker Images"
