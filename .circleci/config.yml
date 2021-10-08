@@ -275,6 +275,9 @@ jobs:
     docker:
       - image: cimg/base
     steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "dd:8f:af:18:32:a1:c9:b7:86:ca:73:a1:1e:77:db:87"
       - stop-running-containers:
           remote-ip: "18.191.154.49"
           remote-user: "ubuntu"
