@@ -270,6 +270,26 @@ jobs:
     environment:
       DOCKER_IMAGE: mind-the-gap-demo
 
+  deploy-via-ip-ranges:
+    circleci_ip_ranges: true
+    docker:
+      - image: cimg/base
+    steps:
+      - stop-running-containers:
+          remote-ip: "18.191.154.49"
+          remote-user: "ubuntu"
+      - remove-all-images:
+          remote-ip: "18.191.154.49"
+          remote-user: "ubuntu"
+      - pull-image:
+          remote-ip: "18.191.154.49"
+          remote-user: "ubuntu"
+      - deploy-application:
+          remote-ip: "18.191.154.49"
+          remote-user: "ubuntu"
+    environment:
+      DOCKER_IMAGE: mind-the-gap-demo
+
 
 workflows:
   demo:
@@ -302,5 +322,9 @@ workflows:
             - "Tag and Publish Docker Images"
       - deploy-via-runner:
           name: "Deploy Application via Runner"
+          requires:
+            - "Tag and Publish Docker Images"
+      - deploy-via-ip-ranges:
+          name: "Deploy Application via IP Ranges"
           requires:
             - "Tag and Publish Docker Images"
