@@ -273,7 +273,7 @@ jobs:
   deploy-via-ip-ranges:
     circleci_ip_ranges: true
     docker:
-      - image: cimg/base
+      - image: cimg/base:2021.10
     steps:
       - add_ssh_keys:
           fingerprints:
