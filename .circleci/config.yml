@@ -49,15 +49,17 @@ commands:
             curl -fsSL https://goss.rocks/install | sh
             goss -version
       - run:
-          name: Make Directory for Test Results
-          command: mkdir test-results
+          name: Make Directory for Goss Results
+          command: mkdir goss-results
       - run:
           name: Run dgoss Test
-          command: dgoss run -p 8080:8080 ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} > test-results/report.xml
+          command: |
+            export GOSS_OPTS="--format junit"
+            dgoss run -p 8080:8080 ${DOCKER_IMAGE}:${VERSION}-${CIRCLE_SHA1} > ./goss-results/report.xml
       - store_test_results:
-          path: test-results
+          path: goss-results
       - store_artifacts:
-          path: test-results
+          path: goss-results
 
   build:
     description: "Build Docker image"
@@ -118,9 +120,11 @@ commands:
     description: "Stop Running Containers on Remote Host"
     parameters:
       remote-ip:
-        type: string
+        type: env_var_name
+        default: REMOTE_IP
       remote-user:
-        type: string
+        type: env_var_name
+        default: REMOTE_USER
     steps:
       - run:
           name: "SSH into host and Stop all Images"
@@ -131,9 +135,11 @@ commands:
     description: "Remove all images on Remote Host"
     parameters:
       remote-ip:
-        type: string
+        type: env_var_name
+        default: REMOTE_IP
       remote-user:
-        type: string
+        type: env_var_name
+        default: REMOTE_USER
     steps:
       - run:
           name: "SSH into host and Remove all Images"
@@ -144,9 +150,11 @@ commands:
     description: "Pull Image on Remote Host"
     parameters:
       remote-ip:
-        type: string
+        type: env_var_name
+        default: REMOTE_IP
       remote-user:
-        type: string
+        type: env_var_name
+        default: REMOTE_USER
       image-tag:
         type: string
         default: "latest"
@@ -160,9 +168,11 @@ commands:
     description: "Deploy Application on Remote Host"
     parameters:
       remote-ip:
-        type: string
+        type: env_var_name
+        default: REMOTE_IP
       remote-user:
-        type: string
+        type: env_var_name
+        default: REMOTE_USER
       image-tag:
         type: string
         default: "latest"
@@ -235,40 +245,28 @@ jobs:
             - "dd:8f:af:18:32:a1:c9:b7:86:ca:73:a1:1e:77:db:87"
       - tailscale/install
       - tailscale/connect
-      - stop-running-containers:
-          remote-ip: "100.75.236.14"
-          remote-user: "ubuntu"
-      - remove-all-images:
-          remote-ip: "100.75.236.14"
-          remote-user: "ubuntu"
-      - pull-image:
-          remote-ip: "100.75.236.14"
-          remote-user: "ubuntu"
-      - deploy-application:
-          remote-ip: "100.75.236.14"
-          remote-user: "ubuntu"
+      - stop-running-containers
+      - remove-all-images
+      - pull-image
+      - deploy-application
       - tailscale/disconnect
     environment:
       DOCKER_IMAGE: mind-the-gap-demo
+      REMOTE_IP: "100.75.236.14"
+      REMOTE_USER: "ubuntu"
 
   deploy-via-runner:
     machine: true
     resource_class: crowley-namespace/mind-the-gap
     steps:
-      - stop-running-containers:
-          remote-ip: "172.31.36.246"
-          remote-user: "ubuntu"
-      - remove-all-images:
-          remote-ip: "172.31.36.246"
-          remote-user: "ubuntu"
-      - pull-image:
-          remote-ip: "172.31.36.246"
-          remote-user: "ubuntu"
-      - deploy-application:
-          remote-ip: "172.31.36.246"
-          remote-user: "ubuntu"
+      - stop-running-containers
+      - remove-all-images
+      - pull-image
+      - deploy-application
     environment:
       DOCKER_IMAGE: mind-the-gap-demo
+      REMOTE_IP: "172.31.36.246"
+      REMOTE_USER: "ubuntu"
 
   deploy-via-ip-ranges:
     circleci_ip_ranges: true
@@ -278,20 +276,14 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - "dd:8f:af:18:32:a1:c9:b7:86:ca:73:a1:1e:77:db:87"
-      - stop-running-containers:
-          remote-ip: "18.191.154.49"
-          remote-user: "ubuntu"
-      - remove-all-images:
-          remote-ip: "18.191.154.49"
-          remote-user: "ubuntu"
-      - pull-image:
-          remote-ip: "18.191.154.49"
-          remote-user: "ubuntu"
-      - deploy-application:
-          remote-ip: "18.191.154.49"
-          remote-user: "ubuntu"
+      - stop-running-containers
+      - remove-all-images
+      - pull-image
+      - deploy-application
     environment:
       DOCKER_IMAGE: mind-the-gap-demo
+      REMOTE_IP: "18.191.154.49"
+      REMOTE_USER: "ubuntu"
 
 
 workflows:
@@ -315,7 +307,7 @@ workflows:
       - tag-and-publish:
           name: "Tag and Publish Docker Images"
           requires:
-            - "Approval Needed for Deployment"
+            - "Testing Docker Image"
           filters:
             branches:
               only: testing
