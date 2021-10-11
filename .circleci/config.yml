@@ -129,7 +129,7 @@ commands:
       - run:
           name: "SSH into host and Stop all Images"
           command: |
-             ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker rm -f \$(docker ps -a -q)" || echo "No Running Containers"
+             ssh -o StrictHostKeyChecking=no ${<< parameters.remote-user >>}@${<< parameters.remote-ip >>} "docker rm -f \$(docker ps -a -q)" || echo "No Running Containers"
 
   remove-all-images:
     description: "Remove all images on Remote Host"
@@ -144,7 +144,7 @@ commands:
       - run:
           name: "SSH into host and Remove all Images"
           command: |
-             ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker rmi -f \$(docker images -q)" || echo "No Images to Remove"
+             ssh -o StrictHostKeyChecking=no ${<< parameters.remote-user >>}@${<< parameters.remote-ip >>} "docker rmi -f \$(docker images -q)" || echo "No Images to Remove"
               
   pull-image:
     description: "Pull Image on Remote Host"
@@ -162,7 +162,7 @@ commands:
       - run:
           name: "SSH into host and Pull down an Image"
           command: |
-             ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker pull ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:<< parameters.image-tag >>"
+             ssh -o StrictHostKeyChecking=no ${<< parameters.remote-user >>}@${<< parameters.remote-ip >>} "docker pull ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:<< parameters.image-tag >>"
 
   deploy-application:
     description: "Deploy Application on Remote Host"
@@ -180,7 +180,7 @@ commands:
       - run:
           name: "SSH into host and Deploy Application"
           command: |
-             ssh -o StrictHostKeyChecking=no << parameters.remote-user >>@<< parameters.remote-ip >> "docker run -d -p 80:8080 ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:<< parameters.image-tag >>"
+             ssh -o StrictHostKeyChecking=no ${<< parameters.remote-user >>}@${<< parameters.remote-ip >>} "docker run -d -p 80:8080 ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:<< parameters.image-tag >>"
 
 executors:
   browsers-python:
@@ -252,8 +252,8 @@ jobs:
       - tailscale/disconnect
     environment:
       DOCKER_IMAGE: mind-the-gap-demo
-      REMOTE_IP: "100.75.236.14"
-      REMOTE_USER: "ubuntu"
+      REMOTE_IP: 100.75.236.14
+      REMOTE_USER: ubuntu
 
   deploy-via-runner:
     machine: true
@@ -265,8 +265,8 @@ jobs:
       - deploy-application
     environment:
       DOCKER_IMAGE: mind-the-gap-demo
-      REMOTE_IP: "172.31.36.246"
-      REMOTE_USER: "ubuntu"
+      REMOTE_IP: 172.31.36.246
+      REMOTE_USER: ubuntu
 
   deploy-via-ip-ranges:
     circleci_ip_ranges: true
@@ -282,8 +282,8 @@ jobs:
       - deploy-application
     environment:
       DOCKER_IMAGE: mind-the-gap-demo
-      REMOTE_IP: "18.191.154.49"
-      REMOTE_USER: "ubuntu"
+      REMOTE_IP: 18.191.154.49
+      REMOTE_USER: ubuntu
 
 
 workflows:
@@ -315,11 +315,14 @@ workflows:
           name: "Deploy Application via Orb"
           requires:
             - "Tag and Publish Docker Images"
+            - "Approval Needed for Deployment"
       - deploy-via-runner:
           name: "Deploy Application via Runner"
           requires:
             - "Tag and Publish Docker Images"
+            - "Approval Needed for Deployment"
       - deploy-via-ip-ranges:
           name: "Deploy Application via IP Ranges"
           requires:
             - "Tag and Publish Docker Images"
+            - "Approval Needed for Deployment"
