@@ -307,7 +307,7 @@ workflows:
             - "Testing Docker Image"
           filters:
             branches:
-              only: testing
+              only: main
       - deploy-via-orb:
           name: "Deploy Application via Orb"
           requires:
