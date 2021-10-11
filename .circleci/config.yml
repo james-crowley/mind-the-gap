@@ -1,7 +1,9 @@
 version: 2.1
 
+
 orbs:
   tailscale: crowley-namespace/tailscale@1.0.0
+
 
 commands:
   set-build-env:
@@ -182,18 +184,13 @@ commands:
           command: |
              ssh -o StrictHostKeyChecking=no ${<< parameters.remote-user >>}@${<< parameters.remote-ip >>} "docker run -d -p 80:8080 ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:<< parameters.image-tag >>"
 
+
 executors:
   browsers-python:
     docker:
       - image: circleci/python:3.9-browsers
 
   amd64:
-    machine:
-      image: ubuntu-2004:202010-01
-      docker_layer_caching: true
-    resource_class: medium
-
-  runner:
     machine:
       image: ubuntu-2004:202010-01
       docker_layer_caching: true
