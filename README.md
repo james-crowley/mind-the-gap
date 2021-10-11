@@ -1,4 +1,7 @@
 # Mind the Gap
+[![CircleCI Build Status](https://circleci.com/gh/james-crowley/mind-the-gap.svg?style=shield)](https://circleci.com/gh/james-crowley/mind-the-gap) [![Software License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/james-crowley/mind-the-gap/main/LICENSE) [![Docker Pulls](https://img.shields.io/docker/pulls/jimcrowley/mind-the-gap-demo)](https://hub.docker.com/r/jimcrowley/mind-the-gap-demo)
+
+
 This demo aims to show users how to bridge the "gap" between their own networks and CircleCI's network. 
 
 
